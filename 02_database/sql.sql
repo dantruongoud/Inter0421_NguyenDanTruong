@@ -188,7 +188,9 @@ SELECT * FROM nhanvien WHERE (SUBSTRING_INDEX(SUBSTRING_INDEX( HoTen , ' ', -1 )
 LIKE "H%" OR SUBSTRING_INDEX(SUBSTRING_INDEX( HoTen , ' ', -1 ),' ',2) LIKE "T%" 
 OR SUBSTRING_INDEX(SUBSTRING_INDEX( HoTen , ' ', -1 ),' ',2) LIKE "K%" )  and length(HoTen) <=15;
 -- Câu 3 --  
-SELECT *,  TIMESTAMPDIFF (YEAR, khachhang.Ngaysinh, CURDATE()) AS AGE FROM khachhang WHERE (TIMESTAMPDIFF (YEAR, khachhang.Ngaysinh, CURDATE()) >=18 AND TIMESTAMPDIFF (YEAR, khachhang.Ngaysinh, CURDATE()) <=50) AND (Diachi LIKE "%Da Nang%" OR Diachi LIKE "%Quang Tri%");
+SELECT *,  TIMESTAMPDIFF (YEAR, khachhang.Ngaysinh, CURDATE()) AS AGE FROM khachhang 
+WHERE (TIMESTAMPDIFF (YEAR, khachhang.Ngaysinh, CURDATE()) >=18 AND TIMESTAMPDIFF (YEAR, khachhang.Ngaysinh, CURDATE()) <=50) 
+AND (Diachi LIKE "%Da Nang%" OR Diachi LIKE "%Quang Tri%");
 -- Câu 4--
 select HopDong.IDHopDong,KhachHang.HoTen, COUNT(HopDong.IDKhachHang) as Solan from HopDong inner join KhachHang on HopDong.IDKhachHang = KhachHang.IDKhachHang  where KhachHang.IDLoaiKhach = 1 group by HopDong.IDKhachHang order by Solan asc;
 -- Câu 5--
@@ -209,16 +211,50 @@ select hopdong.IDHopDong, hopdong.NgayLam, hopdong.NgayKetThuc, hopdong.TienDatC
  select dichvudikem.IDDichVuDiKem, dichvudikem.TenDichVu, dichvudikem.Gia, dichvudikem.DonVi, dichvudikem.TrangThai from ((((dichvudikem inner join hopdongchitiet on dichvudikem.IDDichVuDiKem = hopdongchitiet.IDDichVuDiKem) inner join hopdong on hopdong.IDHopDong = hopdongchitiet.IDHopDong) inner join khachhang on khachhang.IDKhachHang = hopdong.IDKhachHang) inner join loaikhach on loaikhach.IDLoaiKhach = khachhang.IDLoaiKhach) where (loaikhach.TenLoaiKhach like "Diamond") and (khachhang.Diachi like "%Quang Ngai%" or khachhang.Diachi like "%Vinh%");
  -- Câu 12
  select hopdong.IDHopDong, nhanvien.HoTen as NhanVien, khachhang.Hoten as KhachHang, khachhang.SDT, dichvu.TenDichVu, count(hopdongchitiet.IDDichVuDiKem) as SoLuongDichVuDikem  from ((((nhanvien inner join hopdong on nhanvien.IDNhanVien = hopdong.IDNhanVien) inner join khachhang on khachhang.IDKhachHang = hopdong.IDKhachHang) inner join dichvu on dichvu.IDDichVu = hopdong.IDDichVu) inner join hopdongchitiet on hopdongchitiet.IDHopDong = hopdong.IDHopDong) where hopdong.NgayLam not in (select NgayLam from hopdong where month(NgayLam) = 6) and (year(hopdong.NgayLam) = 2019 and quarter(hopdong.NgayLam) = 4) group by hopdong.IDHopDong;
+-- Câu 13
+ select sum(hopdongchitiet.SoLuong) as SoLanSuDung, dichvudikem.IDDichVuDiKem, dichvudikem.TenDichVu, dichvudikem.Gia
+ FROM dichvudikem
+ Inner Join hopdongchitiet ON dichvudikem.IDDichVuDiKem = hopdongchitiet.IDDichVuDiKem
+ Inner Join hopdong ON hopdong.IDHopDong = hopdongchitiet.IDHopDong
+ Group By dichvudikem.TenDichVu order by SoLuong desc limit 1 ;
+ 
+ 
+ 
+ 
+ 
+ 
+ -- Câu 21
+DROP VIEW IF EXISTS V_NHANVIEN;
+CREATE VIEW V_NHANVIEN AS
+SELECT hopdong.IDNhanVien, nhanvien.HoTen, nhanvien.DiaChi, hopdong.NgayLam 
+FROM nhanvien inner join hopdong on nhanvien.IDNhanVien = hopdong.IDNhanVien
+WHERE nhanvien.DiaChi like "%Hai Chau%" and hopdong.NgayLam = "2019-12-12";
+select * from V_NHANVIEN;
+-- Câu 22
+UPDATE nhanvien inner join V_NHANVIEN on nhanvien.IDNhanVien = V_NHANVIEN.IDNhanVien SET nhanvien.DiaChi = "Lien Chieu";
+-- Câu 23
+CREATE unique INDEX IX_KHACHHANG ON khachhang(IDKhachHang);
+DROP INDEX IX_KHACHHANG ON khachhang;
+-- Chỉ mục (Index) là bảng tra cứu đặc biệt mà Database Search Engine có thể sử dụng để tăng nhanh thời gian và hiệu suất thu thập dữ liệu. Một chỉ mục là một con trỏ tới dữ liệu trong một bảng. 
 
-
-
-
-
-
-
-
-
-
+-- Câu 24
+CREATE  INDEX IX_Sdt_DiaChi ON khachhang(IDKhachHang, SDT, DiaChi);
+-- Câu 25
+DELIMITER //
+CREATE PROCEDURE Sp_1(IN id_pr INT, OUT message VARCHAR(50))
+IF id_pr in (Select IDKhachHang from khachhang) THEN
+BEGIN
+	DELETE FROM khachhang WHERE khachhang.IDKhachHang = id_pr;
+    SET message = "Đã xóa học sinh" ;
+END;
+ELSE
+BEGIN
+SET message = "Học sinh không tồn tại" ;
+END;
+END IF;
+//  DELIMITER ;
+CALL Sp_1(2, @message);
+-- Câu 26
 
 
 
